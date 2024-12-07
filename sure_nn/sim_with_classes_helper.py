@@ -4,7 +4,6 @@ import torch.multiprocessing as mp
 import numpy as np
 import time
 
-# Increase num_repeats if you want to repeat each setting multiple times and take the median result
 def run_one_arg(arg_tuple, num_repeats=1):
   seed, out_q, arg_func = arg_tuple
   print(seed, end=' ')
@@ -24,7 +23,25 @@ def run_one_arg(arg_tuple, num_repeats=1):
     all_res.append(this_res)
 
   all_res_full = pd.concat(all_res, ignore_index=True)
-  all_res = all_res_full.groupby(['index', 'Train/Test', 'epoch', 'Method', 'seed']).agg(lambda s: s.median()).drop('repetition', axis=1).reset_index()
+
+  # 將所有數值型列轉換為浮點數，非數值內容將被設為 NaN
+  numeric_cols = all_res_full.select_dtypes(include=[np.number]).columns
+  all_res_full[numeric_cols] = all_res_full[numeric_cols].apply(pd.to_numeric, errors='coerce')
+  
+  # Group and aggregate with appropriate functions for different column types
+  group_cols = ['index', 'Train/Test', 'epoch', 'Method', 'seed']
+  agg_dict = {}
+    
+  for col in all_res_full.columns:
+      if col not in group_cols and col != 'repetition':
+          if col in numeric_cols:
+              agg_dict[col] = 'median'
+          else:
+              agg_dict[col] = 'first'
+    
+  all_res = all_res_full.groupby(group_cols).agg(agg_dict).reset_index()
+
+
   if out_q is not None:
     out_q.put((all_res, all_res_full, attr_series))
   else:

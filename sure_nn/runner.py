@@ -7,7 +7,6 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 import torch.nn.functional as F
 import time
-
 import fairness
 
 class NeuralNetwork(nn.Module):
@@ -104,6 +103,7 @@ def train(dataloader, model, loss_fn, optimizer, device, wt_vec, verbose=1, labe
 
     this_wt_vec = wt_vec[idxs]
     loss = (this_wt_vec * overall_loss).sum()
+    print(f"Loss value: {loss.item()}")
     
     optimizer.zero_grad()
     loss.backward()

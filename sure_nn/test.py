@@ -6,8 +6,7 @@ from functools import partial
 import runner
 import sim_with_classes_helper
 
-# CUDA_VISIBLE_DEVICES=1 /usr/bin/python3 -u test.py --dataset example --dropout_p 0.5 --epochs 2000 --num_procs 5 --num_seeds 5
-
+# CUDA_VISIBLE_DEVICES="" python test.py --dataset cora_test --dropout_p 0.5 --epochs 200 --num_procs 5 --num_seeds 5
 def parse_args():
   parser = argparse.ArgumentParser(description='Fairness on real datasets')
   parser.add_argument('--dataset', type=str, default='example', help='npz file with data')
