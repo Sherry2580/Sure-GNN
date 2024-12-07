@@ -11,6 +11,8 @@ from torch_geometric.nn import GCNConv
 
 import fairness
 
+device = torch.device("cpu")
+
 # class NeuralNetwork(nn.Module):
 #   def __init__(self, feature_dim, output_dim, hidden_dims_arr=[64, 32], dropout_p=0.5, no_dropout_first_layer=False):
 #     super().__init__()
@@ -33,11 +35,11 @@ class NeuralNetwork(nn.Module):
   def __init__(self, feature_dim,output_dim, hidden_dim=64, dropout_p=0.5):
     super(NeuralNetwork, self).__init__()
 
-      # Define Graph Convolutional layers
+    # Define Graph Convolutional layers
     self.conv1 = GCNConv(feature_dim, hidden_dim)
     self.conv2 = GCNConv(hidden_dim, output_dim)
 
-      # Dropout
+    # Dropout
     self.dropout = nn.Dropout(dropout_p)
 
   def forward(self, x,edge_index):
@@ -157,6 +159,7 @@ def train(model, optimizer, device, wt_vec, X, y, edge_index, loss_fn):
 
   this_wt_vec = wt_vec
   loss = (this_wt_vec * overall_loss).sum()
+  print(f"Loss value: {loss.item()}")
 
   optimizer.zero_grad()
   loss.backward()
@@ -238,7 +241,7 @@ def do_all(training_data, testing_data, sensitive_cols, num_pts_in_bin=30, clust
   loss_fn = nn.CrossEntropyLoss(reduction='none')
   device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
   model = NeuralNetwork(feature_dim=feature_dim, output_dim=output_dim, hidden_dim=64, dropout_p=dropout_p).to(device)
-  optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+  optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
 
   wt_vec = (torch.ones(len(training_data)) / len(training_data)).to(device)
   all_stress_idxs, all_okc_idxs = [], []

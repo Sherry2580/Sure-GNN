@@ -2,11 +2,11 @@ import argparse
 import pandas as pd
 import numpy as np
 from functools import partial
-
+import torch
 import runner
 import sim_with_classes_helper
 
-# CUDA_VISIBLE_DEVICES=1 /usr/bin/python3 -u test.py --dataset example --dropout_p 0.5 --epochs 2000 --num_procs 5 --num_seeds 5
+# CUDA_VISIBLE_DEVICES="" python test.py --dataset cora_data2 --dropout_p 0.5 --epochs 200 --num_procs 5 --num_seeds 5
 
 def parse_args():
   parser = argparse.ArgumentParser(description='Fairness on real datasets')
@@ -23,27 +23,28 @@ def parse_args():
   print(args)
   return args
 
-
 def do_all():
   pd.set_option('display.max_rows', 100, 'display.width', 1000, 'display.max_columns', None, 'display.max_colwidth', None)
   args = parse_args()
 
   all_args = []
   for seed in np.arange(args.num_seeds):
-    F = np.load(f'{args.dataset}.npz', allow_pickle=True)
-    X_train, X_train_sensitive, y_train, X_test, X_test_sensitive, y_test, sensitive_cols, edge_index = \
-        F['X_train'], F['X_train_sensitive'], F['y_train'], F['X_test'], F['X_test_sensitive'], F['y_test'], F['sensitive_cols'].item(), F['edge_index']
+      F = np.load(f'{args.dataset}.npz', allow_pickle=True)
+      X_train, X_train_sensitive, y_train, X_test, X_test_sensitive, y_test, sensitive_cols, edge_index_train, edge_index_test = \
+          F['X_train'], F['X_train_sensitive'], F['y_train'], F['X_test'], F['X_test_sensitive'], F['y_test'], F['sensitive_cols'].item(), F['edge_index_train'], F['edge_index_test']
 
+      # Create training and testing datasets
+      training_data = runner.MyDataset(X_train, X_train_sensitive, y_train, edge_index_train)
+      testing_data = runner.MyDataset(X_test, X_test_sensitive, y_test, edge_index_test)
 
-    training_data = runner.MyDataset(X_train, X_train_sensitive, y_train, edge_index)
-    testing_data = runner.MyDataset(X_test, X_test_sensitive, y_test, edge_index)
-
-    verbose = -3
-    arg_func = partial(runner.do_all, training_data=training_data, testing_data=testing_data, sensitive_cols=sensitive_cols, batch_size=2708, num_pts_in_bin=args.num_pts_in_bin, skip_epochs=args.skip_epochs, cluster_epochs=args.cluster_epochs, epochs=args.epochs, verbose=verbose, dropout_p=args.dropout_p, train_error_check_epochs=[50, 100, 150, 200]+list(np.arange(300, args.epochs+1, 500)))
-    all_args.append((seed, arg_func))
+      verbose = -3
+      arg_func = partial(runner.do_all, training_data=training_data, testing_data=testing_data, sensitive_cols=sensitive_cols, batch_size=2708, num_pts_in_bin=args.num_pts_in_bin, skip_epochs=args.skip_epochs, cluster_epochs=args.cluster_epochs, epochs=args.epochs, verbose=verbose, dropout_p=args.dropout_p, train_error_check_epochs=[50, 100, 150, 200] + list(np.arange(300, args.epochs + 1, 500)))
+      all_args.append((seed, arg_func))
 
   all_res, all_res_full, attr_series = sim_with_classes_helper.create_and_run_args(list_seeds_and_arg_funcs=all_args, num_procs=args.num_procs)
 
 
 if __name__ == '__main__':
   do_all()
+
+
