@@ -8,10 +8,7 @@ from sklearn.metrics import roc_auc_score
 import time
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
-
 import fairness
-
-device = torch.device("cpu")
 
 # class NeuralNetwork(nn.Module):
 #   def __init__(self, feature_dim, output_dim, hidden_dims_arr=[64, 32], dropout_p=0.5, no_dropout_first_layer=False):
